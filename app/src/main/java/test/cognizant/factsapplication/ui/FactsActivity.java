@@ -12,13 +12,13 @@ import test.cognizant.factsapplication.R;
 
 public class FactsActivity extends AppCompatActivity {
 
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_facts);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-
 
         final FactsFragment factsFragment = (FactsFragment) getSupportFragmentManager().findFragmentById(R.id.fragment_facts);
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);

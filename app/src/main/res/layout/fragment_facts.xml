@@ -10,15 +10,24 @@
     tools:context=".ui.FactsFragment"
     tools:showIn="@layout/activity_facts">
 
-    <android.support.v7.widget.RecyclerView
-        android:id="@+id/recycler_facts"
+    <RelativeLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent" />
+        android:layout_height="match_parent">
 
-    <ProgressBar
-        android:id="@+id/progress_bar"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_centerInParent="true" />
+        <android.support.v7.widget.RecyclerView
+            android:id="@+id/recycler_facts"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_alignParentTop="true" />
 
+        <ProgressBar
+            android:id="@+id/progress_bar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true"
+            android:layout_gravity="right"
+            android:indeterminateTint="@android:color/holo_blue_bright"
+            android:indeterminateTintMode="src_in" />
+
+    </RelativeLayout>
 </android.support.v4.widget.SwipeRefreshLayout>

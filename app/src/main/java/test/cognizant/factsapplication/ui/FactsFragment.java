@@ -2,8 +2,11 @@ package test.cognizant.factsapplication.ui;
 
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.support.design.widget.Snackbar;
 import android.support.v4.app.Fragment;
 import android.support.v4.widget.SwipeRefreshLayout;
+import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
@@ -13,7 +16,6 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -27,6 +29,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import test.cognizant.factsapplication.R;
+import test.cognizant.factsapplication.model.Fact;
 
 /**
  * A placeholder fragment containing a simple view.
@@ -41,10 +44,10 @@ public class FactsFragment extends Fragment {
     private RecyclerView recylerView;
     private ProgressBar progressBar;
 
-
     private List<Fact> factsList = new ArrayList<>();
     private FactsAdapter factsAdapter;
     private AsyncHttpTask jsonFeedTask;
+
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -90,7 +93,9 @@ public class FactsFragment extends Fragment {
         recylerView.setHasFixedSize(true);
         recylerView.setLayoutManager(new LinearLayoutManager(getActivity()));
         recylerView.setAdapter(factsAdapter);
+        recylerView.setItemAnimator(new DefaultItemAnimator());
     }
+
 
     public void retrieveFactFeed() {
         if (jsonFeedTask == null || jsonFeedTask.getStatus() == AsyncTask.Status.FINISHED) {
@@ -102,7 +107,9 @@ public class FactsFragment extends Fragment {
     private void parseResult(String result) {
         try {
             JSONObject response = new JSONObject(result);
-            System.out.println(response.optString("title"));
+            String title = response.optString("title");
+            System.out.println(title);
+            ((AppCompatActivity) getActivity()).getSupportActionBar().setTitle(title);
             JSONArray rows = response.optJSONArray("rows");
             factsList.clear();
 
@@ -116,7 +123,7 @@ public class FactsFragment extends Fragment {
                 factsList.add(item);
             }
         } catch (JSONException e) {
-            e.printStackTrace();
+            Log.e(TAG, "Exception while parsing json feed", e);
         }
     }
 
@@ -125,7 +132,6 @@ public class FactsFragment extends Fragment {
         @Override
         protected void onPreExecute() {
             progressBar.setVisibility(View.VISIBLE);
-            getActivity().setProgressBarIndeterminateVisibility(true);
         }
 
         @Override
@@ -142,7 +148,7 @@ public class FactsFragment extends Fragment {
                     BufferedReader r = new BufferedReader(new InputStreamReader(urlConnection.getInputStream()));
                     StringBuilder response = new StringBuilder();
                     String line;
-                    while ((line = r.readLine()) != null) {
+                    while ((line = r.readLine()) != null) { 
                         response.append(line);
                     }
                     parseResult(response.toString());
@@ -159,12 +165,10 @@ public class FactsFragment extends Fragment {
         @Override
         protected void onPostExecute(Boolean result) {
             // Download complete. Let us update UI
-            progressBar.setVisibility(View.GONE);
-            getActivity().setProgressBarIndeterminateVisibility(false);
             if (!result) {
-                Toast.makeText(getActivity(), "Failed to fetch data!", Toast.LENGTH_SHORT).show();
+                Snackbar.make(progressBar, "Failed to fetch data!", Snackbar.LENGTH_SHORT).show();
             }
-
+            progressBar.setVisibility(View.INVISIBLE);
             factsAdapter.notifyDataSetChanged();
             // Stop refresh animation
             refreshLayout.setRefreshing(false);
