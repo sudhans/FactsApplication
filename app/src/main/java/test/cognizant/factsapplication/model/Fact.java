@@ -1,4 +1,4 @@
-package test.cognizant.factsapplication.ui;
+package test.cognizant.factsapplication.model;
 
 /**
  * Created by Madhusudhan
