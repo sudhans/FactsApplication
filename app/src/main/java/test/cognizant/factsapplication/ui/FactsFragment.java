@@ -1,15 +1,30 @@
 package test.cognizant.factsapplication.ui;
 
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
 
 import test.cognizant.factsapplication.R;
 
@@ -18,10 +33,25 @@ import test.cognizant.factsapplication.R;
  */
 public class FactsFragment extends Fragment {
 
+
+    private static final String TAG = FactsFragment.class.getName();
+    private static final String factUrl = "https://dl.dropboxusercontent.com/u/746330/facts.json";
+
     private SwipeRefreshLayout refreshLayout;
     private RecyclerView recylerView;
+    private ProgressBar progressBar;
 
-    public FactsFragment() {
+
+    private List<Fact> factsList = new ArrayList<>();
+    private FactsAdapter factsAdapter;
+    private AsyncHttpTask jsonFeedTask;
+
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setRetainInstance(true);
+
+        factsAdapter = new FactsAdapter(factsList);
     }
 
     @Override
@@ -31,7 +61,16 @@ public class FactsFragment extends Fragment {
 
         refreshLayout = (SwipeRefreshLayout) view.findViewById(R.id.layout_swipeRefresh);
         recylerView = (RecyclerView) view.findViewById(R.id.recycler_facts);
+        progressBar = (ProgressBar) view.findViewById(R.id.progress_bar);
         return view;
+    }
+
+    @Override
+    public void onDestroyView() {
+        refreshLayout = null;
+        recylerView = null;
+        progressBar = null;
+        super.onDestroyView();
     }
 
     @Override
@@ -40,48 +79,121 @@ public class FactsFragment extends Fragment {
         refreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
             @Override
             public void onRefresh() {
-                refreshFacts();
+                retrieveFactFeed();
             }
         });
 
-        recylerView.setAdapter(new FactsAdapter());
+        if (savedInstanceState == null) {
+            retrieveFactFeed();
+        }
+
         recylerView.setHasFixedSize(true);
         recylerView.setLayoutManager(new LinearLayoutManager(getActivity()));
+        recylerView.setAdapter(factsAdapter);
     }
 
-    private void refreshFacts() {
-        // Load facts
-
-        // Loading facts complete
-        onFactsLoadComplete();
+    public void retrieveFactFeed() {
+        if (jsonFeedTask == null || jsonFeedTask.getStatus() == AsyncTask.Status.FINISHED) {
+            jsonFeedTask = new AsyncHttpTask();
+            jsonFeedTask.execute(factUrl);
+        }
     }
 
-    private void onFactsLoadComplete () {
-        // Update Adapter & Notify dataset
+    private void parseResult(String result) {
+        try {
+            JSONObject response = new JSONObject(result);
+            System.out.println(response.optString("title"));
+            JSONArray rows = response.optJSONArray("rows");
+            factsList.clear();
 
-        // Stop refresh animation
-        refreshLayout.setRefreshing(false);
+            for (int i = 0; i < rows.length(); i++) {
+                JSONObject rowJsonObject = rows.optJSONObject(i);
+                Fact item = new Fact();
+                item.setTitle(rowJsonObject.optString("title"));
+                item.setDescription(rowJsonObject.optString("description"));
+                item.setImageUrl(rowJsonObject.optString("imageHref"));
+
+                factsList.add(item);
+            }
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public class AsyncHttpTask extends AsyncTask<String, Void, Boolean> {
+
+        @Override
+        protected void onPreExecute() {
+            progressBar.setVisibility(View.VISIBLE);
+            getActivity().setProgressBarIndeterminateVisibility(true);
+        }
+
+        @Override
+        protected Boolean doInBackground(String... params) {
+            boolean result = false;
+            HttpURLConnection urlConnection;
+            try {
+                URL url = new URL(params[0]);
+                urlConnection = (HttpURLConnection) url.openConnection();
+                int statusCode = urlConnection.getResponseCode();
+
+                // 200 represents HTTP OK
+                if (statusCode == 200) {
+                    BufferedReader r = new BufferedReader(new InputStreamReader(urlConnection.getInputStream()));
+                    StringBuilder response = new StringBuilder();
+                    String line;
+                    while ((line = r.readLine()) != null) {
+                        response.append(line);
+                    }
+                    parseResult(response.toString());
+                    result = true; // Successful
+                } else {
+                    result = false; //"Failed to fetch data!";
+                }
+            } catch (Exception e) {
+                Log.d(TAG, e.getLocalizedMessage());
+            }
+            return result; //"Failed to fetch data!";
+        }
+
+        @Override
+        protected void onPostExecute(Boolean result) {
+            // Download complete. Let us update UI
+            progressBar.setVisibility(View.GONE);
+            getActivity().setProgressBarIndeterminateVisibility(false);
+            if (!result) {
+                Toast.makeText(getActivity(), "Failed to fetch data!", Toast.LENGTH_SHORT).show();
+            }
+
+            factsAdapter.notifyDataSetChanged();
+            // Stop refresh animation
+            refreshLayout.setRefreshing(false);
+        }
     }
 
     private class FactsAdapter extends RecyclerView.Adapter<FactsAdapter.ViewHolder> {
-        private String[] facts = {"Hello", "How", "are", "you"};
+        private List<Fact> facts;
+
+        FactsAdapter(List<Fact> facts) {
+            this.facts = facts;
+        }
 
         @Override
         public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
             View rowView = LayoutInflater.from(parent.getContext()).inflate(R.layout.list_row_facts, parent, false);
-            ViewHolder viewHolder = new ViewHolder(rowView);
-            return viewHolder;
+            return new ViewHolder(rowView);
         }
 
         @Override
         public void onBindViewHolder(ViewHolder holder, int position) {
-            holder.title.setText(facts[position]);
-            holder.description.setText(facts[position]);
+            Fact factItem = facts.get(position);
+            holder.title.setText(factItem.getTitle());
+            holder.description.setText(factItem.getDescription());
         }
 
         @Override
         public int getItemCount() {
-            return facts.length;
+            return facts.size();
         }
 
         public class ViewHolder extends RecyclerView.ViewHolder {
