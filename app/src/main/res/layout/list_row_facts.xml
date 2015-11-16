@@ -2,11 +2,12 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:layout_marginBottom="10dp">
 
     <TextView
         android:id="@+id/textview_title"
-        style="?android:attr/listPreferredItemHeightLarge"
+        style="@style/TextAppearance.AppCompat.Headline"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:maxLines="2"
@@ -15,8 +16,8 @@
 
     <ImageView
         android:id="@+id/imageview_thumbnail"
-        android:layout_width="100dp"
-        android:layout_height="100dp"
+        android:layout_width="@dimen/thumbnail_width"
+        android:layout_height="@dimen/thumbnail_height"
         android:layout_alignParentEnd="true"
         android:layout_below="@id/textview_title"
         android:contentDescription="@null"
@@ -26,12 +27,12 @@
 
     <TextView
         android:id="@+id/textview_description"
-        style="?android:attr/listPreferredItemHeight"
+        style="@style/TextAppearance.AppCompat.Medium"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentStart="true"
         android:layout_below="@id/textview_title"
-        android:layout_toStartOf="@id/textview_description"
+        android:layout_toStartOf="@id/imageview_thumbnail"
         tools:text="Description"
         />
 
